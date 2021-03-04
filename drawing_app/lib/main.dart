@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
-void main() {
+Future<SharedPreferences> _prefs;
+SharedPreferences prefs ;
+void main()  {
+
+
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
   @override
-  Widget build(BuildContext context) {
+
+  Widget build(BuildContext context)  {
+
     return MaterialApp(
       title: 'IITD Drawing App',
       theme: ThemeData(
@@ -176,8 +183,24 @@ class CanvasState extends State {
                 ),
                 FlatButton(
                   child: Text("Save"),
-                  onPressed: () {
+                  onPressed: () async {
                     print(_points);
+                    _prefs = SharedPreferences.getInstance();
+                    prefs = await _prefs;
+                    var str = prefs.getString("data")??'[]';
+                    var arr = jsonDecode(str);
+                    var _newpoints = [];
+                    for(var point in _points){
+                      _newpoints.add(point.toString());
+                    }
+                    arr.add({
+                      "name":"doc",
+                      "points":_newpoints,
+                      "id": DateTime.now().millisecondsSinceEpoch,
+                    });
+                    print(jsonDecode(str));
+                    prefs.setString("data", jsonEncode(arr));
+
                   },
                 ),
                 Padding(
