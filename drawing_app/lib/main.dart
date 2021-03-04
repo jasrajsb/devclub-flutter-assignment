@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(MyApp());
@@ -19,16 +20,15 @@ class MyApp extends StatelessWidget {
 }
 
 // ignore: camel_case_types
-class listOfDrawings extends StatefulWidget{
+class listOfDrawings extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
     return listOfDrawingsState();
   }
-
 }
 
 // ignore: camel_case_types
-class listOfDrawingsState extends State{
+class listOfDrawingsState extends State {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,9 +50,7 @@ class listOfDrawingsState extends State{
       ),
     );
   }
-
 }
-
 
 class MyList extends StatefulWidget {
   MyList({Key key}) : super(key: key);
@@ -100,38 +98,105 @@ class MyListState extends State<MyList> {
   }
 }
 
-
 class CanvasPage extends StatefulWidget {
   @override
-   createState() => new CanvasState();
+  createState() => new CanvasState();
 }
 
 class CanvasState extends State {
   List<Offset> _points = <Offset>[];
-
+  var showCanvas=true;
   @override
   Widget build(BuildContext context) {
-    return new Scaffold(
-      body: new Container(
-        child: new GestureDetector(
-          onPanUpdate: (DragUpdateDetails details) {
-            setState(() {
-              RenderBox object = context.findRenderObject();
-              Offset _localPosition =
-              object.globalToLocal(details.globalPosition);
-              _points = new List.from(_points)..add(_localPosition);
-            });
-          },
-          onPanEnd: (DragEndDetails details) => _points.add(null),
-          child: new CustomPaint(
-            painter: new Signature(points: _points),
-            size: Size.infinite,
-          ),
+
+    return GestureDetector(
+      onTap: (){
+        FocusScopeNode currentFocus = FocusScope.of(context);
+
+        if (!currentFocus.hasPrimaryFocus) {
+          currentFocus.unfocus();
+        }
+        setState(() {
+          showCanvas = true;
+        });
+      },
+      child: new Scaffold(
+//      appBar: AppBar(title:Text("Drawing Screen"),),
+        resizeToAvoidBottomInset: false,
+        body: Column(
+          children: [
+            new Container(
+              height: showCanvas?MediaQuery.of(context).size.height*0.9:50,//MediaQuery.of(context).size.height * 0.9,
+              child: new GestureDetector(
+                onPanUpdate: (DragUpdateDetails details) {
+                  setState(() {
+                    RenderBox object = context.findRenderObject();
+                    Offset _localPosition =
+                        object.globalToLocal(details.globalPosition);
+                    print(_localPosition.dy);
+                    print(MediaQuery.of(context).size.height * 0.9);
+                    if(_localPosition.dy<MediaQuery.of(context).size.height * 0.9){
+                    _points = new List.from(_points)..add(_localPosition);}
+                  });
+                },
+                onPanEnd: (DragEndDetails details) => _points.add(null),
+                child: Container(
+                  height:MediaQuery.of(context).size.height * 0.9,
+                  child: new CustomPaint(
+                      painter: new Signature(points: _points),
+                      size: Size(
+                        MediaQuery.of(context).size.width * 1,
+                        MediaQuery.of(context).size.height * 0.9,
+                      )),
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                new Container(
+                  width: MediaQuery.of(context).size.width * 0.5,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                          ),
+                      child: TextField(
+                        onTap: (){
+                          setState(() {
+                            showCanvas=false;
+                          });
+                        },
+                        decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: 'Enter File Name here'
+                                ' '),
+                      ),
+                    ),
+                  ),
+                ),
+                FlatButton(
+                  child: Text("Save"),
+                  onPressed: () {
+                    print(_points);
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: FlatButton(
+                    child: Text("Clear"),
+                    onPressed: () {
+                      _points.clear();
+                    },
+                  ),
+                )
+              ],
+            ),
+          ],
         ),
-      ),
-      floatingActionButton: new FloatingActionButton(
-        child: new Icon(Icons.clear),
-        onPressed: () => _points.clear(),
+//      floatingActionButton: new FloatingActionButton(
+//        child: new Icon(Icons.clear),
+//        onPressed: () => _points.clear(),
+//      ),
       ),
     );
   }
@@ -147,7 +212,7 @@ class Signature extends CustomPainter {
     Paint paint = new Paint()
       ..color = Colors.blue
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 10.0;
+      ..strokeWidth = 5.0;
 
     for (int i = 0; i < points.length - 1; i++) {
       if (points[i] != null && points[i + 1] != null) {
