@@ -5,14 +5,32 @@ import 'dart:convert';
 
 Future<SharedPreferences> _prefs;
 SharedPreferences prefs ;
-void main()  {
+var list;
+getItems() async {
+  _prefs = SharedPreferences.getInstance();
+  prefs = await _prefs;
+  var data2 = prefs.getString("data");
+  var data = jsonDecode(data2);
+  var arr=[];
+  print(data[0]["name"]);
+  for(var drawing in data){
+    arr.add(drawing["name"]);
+  }
 
+  list=arr;
+  return arr;
+}
 
-  runApp(MyApp());
+void main() async {
+  runApp(MyApp(list));
 }
 
 class MyApp extends StatelessWidget {
   @override
+  var list=[];
+  MyApp(listVar) {
+    list=listVar;
+  }
 
   Widget build(BuildContext context)  {
 
@@ -21,7 +39,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: listOfDrawings(),
+      home: listOfDrawings(list),
     );
   }
 }
@@ -29,15 +47,38 @@ class MyApp extends StatelessWidget {
 // ignore: camel_case_types
 class listOfDrawings extends StatefulWidget {
   @override
+  var list=[];
+  listOfDrawings(listVar){
+    list = listVar;
+  }
   State<StatefulWidget> createState() {
-    return listOfDrawingsState();
+    return listOfDrawingsState(list);
   }
 }
 
 // ignore: camel_case_types
 class listOfDrawingsState extends State {
+  var list = [];
+  listOfDrawingsState(listVar){
+    list = listVar;
+  }
+  _getList() async {
+    var _items = await getItems();
+    setState((){
+      print(_items);
+      list = _items;
+    });
+  }
+  initState() {
+    setState(()  {
+      _getList();
+    });
+
+  }
   @override
   Widget build(BuildContext context) {
+    print('78');
+    print(list);
     return Scaffold(
       body: Container(
         child: MyList(),
@@ -60,19 +101,25 @@ class listOfDrawingsState extends State {
 }
 
 class MyList extends StatefulWidget {
-  MyList({Key key}) : super(key: key);
+
+
+
 
   @override
-  MyListState createState() {
+  createState()  {
+    print('112');
     return MyListState();
   }
 }
 
 class MyListState extends State<MyList> {
-  final items = List<String>.generate(20, (i) => "Item ${i + 1}");
-
+  final itemsa = List<String>.generate(20, (i) => "Item ${i + 1}");
   @override
+
   Widget build(BuildContext context) {
+    var items = list??[];
+    print(126);
+    print(items);
     final title = 'Dismissing Items';
 
     return ListView.builder(
@@ -81,13 +128,11 @@ class MyListState extends State<MyList> {
         final item = items[index];
 
         return Dismissible(
-          // Each Dismissible must contain a Key. Keys allow Flutter to
-          // uniquely identify widgets.
+
           key: Key(item),
-          // Provide a function that tells the app
-          // what to do after an item has been swiped away.
+
           onDismissed: (direction) {
-            // Remove the item from the data source.
+
             setState(() {
               items.removeAt(index);
             });
@@ -194,13 +239,12 @@ class CanvasState extends State {
                       _newpoints.add(point.toString());
                     }
                     arr.add({
-                      "name":"doc",
+                      "name":"doc "+(DateTime.now().millisecondsSinceEpoch.toString()),
                       "points":_newpoints,
                       "id": DateTime.now().millisecondsSinceEpoch,
                     });
                     print(jsonDecode(str));
                     prefs.setString("data", jsonEncode(arr));
-
                   },
                 ),
                 Padding(
