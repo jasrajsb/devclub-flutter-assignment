@@ -3,19 +3,37 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
+resolveOffset(arr){
+  List<Offset> arrd=[];
+  for(var offset in arr){
+
+    offset = offset??"Offset(0,0)";
+    print(offset is String);
+    if(offset !='null'){
+      arrd.add(Offset(double.parse(offset.split("(")[1].split(",")[0]),double.parse(offset.split(",")[1].split(")")[0])));
+    }
+  }
+  return arrd;
+}
+
 Future<SharedPreferences> _prefs;
 SharedPreferences prefs ;
 var list;
+List <List<Offset>>points;
 getItems() async {
   _prefs = SharedPreferences.getInstance();
   prefs = await _prefs;
   var data2 = prefs.getString("data");
   var data = jsonDecode(data2);
   var arr=[];
+  points=[];
   print(data[0]["name"]);
   for(var drawing in data){
     arr.add(drawing["name"]);
+    print(drawing);
+    points.add(resolveOffset(drawing["points"]));
   }
+
 
   list=arr;
   return arr;
@@ -92,7 +110,7 @@ class listOfDrawingsState extends State {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => CanvasPage()),
+            MaterialPageRoute(builder: (context) => CanvasPage(points.length)),
           );
         },
       ),
@@ -127,23 +145,32 @@ class MyListState extends State<MyList> {
       itemBuilder: (context, index) {
         final item = items[index];
 
-        return Dismissible(
+        return GestureDetector(
+          onTap: (){
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => CanvasPage((index))),
+            );
 
-          key: Key(item),
-
-          onDismissed: (direction) {
-
-            setState(() {
-              items.removeAt(index);
-            });
-
-            // Then show a snackbar.
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text("$item dismissed")));
           },
-          // Show a red background as the item is swiped away.
-          background: Container(color: Colors.red),
-          child: ListTile(title: Text('$item')),
+          child: Dismissible(
+
+            key: Key(item),
+
+            onDismissed: (direction) {
+
+              setState(() {
+                items.removeAt(index);
+              });
+
+              // Then show a snackbar.
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text("$item dismissed")));
+            },
+            // Show a red background as the item is swiped away.
+            background: Container(color: Colors.red),
+            child: ListTile(title: Text('$item')),
+          ),
         );
       },
     );
@@ -152,15 +179,25 @@ class MyListState extends State<MyList> {
 
 class CanvasPage extends StatefulWidget {
   @override
-  createState() => new CanvasState();
+  var p;
+  CanvasPage(i){
+    p=i;
+  }
+
+
+  createState() => new CanvasState(p);
 }
 
 class CanvasState extends State {
-  List<Offset> _points = <Offset>[];
+  var index;
+  CanvasState(inde){
+    index=inde;
+  }
+
   var showCanvas=true;
   @override
   Widget build(BuildContext context) {
-
+    List<Offset> _points = points[index]??[];
     return GestureDetector(
       onTap: (){
         FocusScopeNode currentFocus = FocusScope.of(context);
