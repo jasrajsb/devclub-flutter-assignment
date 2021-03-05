@@ -33,12 +33,12 @@ getItems() async {
 
 
   for(var drawing in data){
+    print('ye');
     print(drawing );
-    print(drawing == null);
+
     if(!(drawing == null)){
-      print(drawing);
+
       arr.add(drawing["name"]);
-      print(drawing);
       points.add(resolveOffset(drawing["points"]));
     }
 
@@ -168,15 +168,22 @@ class MyListState extends State<MyList> {
 
             key: Key(item),
 
-            onDismissed: (direction) {
-
+            onDismissed: (direction) async {
+              print(index);
               setState(() {
                 items.removeAt(index);
                 points.removeAt(index);
                 dataArr.removeAt(index);
 
               });
-
+              _prefs = SharedPreferences.getInstance();
+              prefs = await _prefs;
+              var str = prefs.getString("data")??'[]';
+              var arr = jsonDecode(str);
+//              print (arr[6]);
+              arr.removeAt(index);
+  //            print (arr[6]);
+              prefs.setString("data", jsonEncode(arr));
               // Then show a snackbar.
               ScaffoldMessenger.of(context)
                   .showSnackBar(SnackBar(content: Text("$item dismissed")));
@@ -337,10 +344,11 @@ class CanvasState extends State {
 
                     print(jsonDecode(str));
                     prefs.setString("data", jsonEncode(arr));
+                    
                     Navigator.pop(context);
                   },
                 ),
-                Padding(
+                isNewDoc?Padding(
                   padding: const EdgeInsets.only(left: 8.0),
                   child: FlatButton(
                     child: Text("Clear"),
@@ -348,7 +356,7 @@ class CanvasState extends State {
                       _points.clear();
                     },
                   ),
-                )
+                ):Container()
               ],
             ),
           ],
