@@ -8,9 +8,10 @@ resolveOffset(arr){
   for(var offset in arr){
 
     offset = offset??"Offset(0,0)";
-    print(offset is String);
     if(offset !='null'){
       arrd.add(Offset(double.parse(offset.split("(")[1].split(",")[0]),double.parse(offset.split(",")[1].split(")")[0])));
+    } else{
+      arrd.add(null);
     }
   }
   return arrd;
@@ -19,19 +20,29 @@ resolveOffset(arr){
 Future<SharedPreferences> _prefs;
 SharedPreferences prefs ;
 var list;
+var dataArr=[];
 List <List<Offset>>points;
 getItems() async {
   _prefs = SharedPreferences.getInstance();
   prefs = await _prefs;
   var data2 = prefs.getString("data");
   var data = jsonDecode(data2);
+  dataArr = data;
   var arr=[];
   points=[];
-  print(data[0]["name"]);
+
+
   for(var drawing in data){
-    arr.add(drawing["name"]);
-    print(drawing);
-    points.add(resolveOffset(drawing["points"]));
+    print(drawing );
+    print(drawing == null);
+    if(!(drawing == null)){
+      print(drawing);
+      arr.add(drawing["name"]);
+      print(drawing);
+      points.add(resolveOffset(drawing["points"]));
+    }
+
+
   }
 
 
@@ -161,6 +172,9 @@ class MyListState extends State<MyList> {
 
               setState(() {
                 items.removeAt(index);
+                points.removeAt(index);
+                dataArr.removeAt(index);
+
               });
 
               // Then show a snackbar.
@@ -190,14 +204,28 @@ class CanvasPage extends StatefulWidget {
 
 class CanvasState extends State {
   var index;
+  bool isNewDoc;
   CanvasState(inde){
     index=inde;
+     isNewDoc = index==points.length;
+    if(!isNewDoc){
+      tec.text = list[index];
+    }
   }
 
   var showCanvas=true;
-  @override
+  bool coolDown = false;
+  List<Offset> _points = [];
+
+  var tec = TextEditingController();
   Widget build(BuildContext context) {
-    List<Offset> _points = points[index]??[];
+
+
+    if(!isNewDoc){
+      _points.addAll(points[index]??[]);
+      _points.add(null);
+    }
+
     return GestureDetector(
       onTap: (){
         FocusScopeNode currentFocus = FocusScope.of(context);
@@ -218,17 +246,30 @@ class CanvasState extends State {
               height: showCanvas?MediaQuery.of(context).size.height*0.9:50,//MediaQuery.of(context).size.height * 0.9,
               child: new GestureDetector(
                 onPanUpdate: (DragUpdateDetails details) {
-                  setState(() {
-                    RenderBox object = context.findRenderObject();
-                    Offset _localPosition =
-                        object.globalToLocal(details.globalPosition);
-                    print(_localPosition.dy);
-                    print(MediaQuery.of(context).size.height * 0.9);
-                    if(_localPosition.dy<MediaQuery.of(context).size.height * 0.9){
-                    _points = new List.from(_points)..add(_localPosition);}
-                  });
+                  if(isNewDoc){
+                    setState(() {
+                      RenderBox object = context.findRenderObject();
+                      Offset _localPosition =
+                      object.globalToLocal(details.globalPosition);
+                      print(_localPosition.dy);
+                      print(MediaQuery.of(context).size.height * 0.9);
+                      if(_localPosition.dy<MediaQuery.of(context).size.height * 0.9){
+                        _points = new List.from(_points)..add(_localPosition);}
+                    });
+                  } else{
+                    if(!coolDown){
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(SnackBar(content: Text("Drawing cannot be edited.")));
+                      coolDown = true;
+                      Future.delayed(const Duration(milliseconds: 5000),(){
+                        coolDown = false;
+                      });
+                    }
+                  }
+
                 },
-                onPanEnd: (DragEndDetails details) => _points.add(null),
+
+                onPanEnd: (DragEndDetails details) {if(isNewDoc)return _points.add(null);},
                 child: Container(
                   height:MediaQuery.of(context).size.height * 0.9,
                   child: new CustomPaint(
@@ -250,6 +291,7 @@ class CanvasState extends State {
                       padding: EdgeInsets.only(
                           ),
                       child: TextField(
+                        controller: tec,
                         onTap: (){
                           setState(() {
                             showCanvas=false;
@@ -275,13 +317,27 @@ class CanvasState extends State {
                     for(var point in _points){
                       _newpoints.add(point.toString());
                     }
-                    arr.add({
-                      "name":"doc "+(DateTime.now().millisecondsSinceEpoch.toString()),
-                      "points":_newpoints,
-                      "id": DateTime.now().millisecondsSinceEpoch,
-                    });
+                    if(!isNewDoc){
+                      print("saving new doc...");
+                      arr[index] = ({
+                        "name": tec.text,
+                        "points":_newpoints,
+                        "id": DateTime.now().millisecondsSinceEpoch,
+                      });
+                    } else{
+                      print(tec.text=='');
+                      var name = tec.text!=''?tec.text:"doc "+(DateTime.now().millisecondsSinceEpoch.toString());
+                      arr.add({
+
+                        "name":name,
+                        "points":_newpoints,
+                        "id": DateTime.now().millisecondsSinceEpoch,
+                      });
+                    }
+
                     print(jsonDecode(str));
                     prefs.setString("data", jsonEncode(arr));
+                    Navigator.pop(context);
                   },
                 ),
                 Padding(
