@@ -26,7 +26,7 @@ getItems() async {
   _prefs = SharedPreferences.getInstance();
   prefs = await _prefs;
   var data2 = prefs.getString("data");
-  var data = jsonDecode(data2);
+  var data = jsonDecode(data2??'[]');
   dataArr = data;
   var arr=[];
   points=[];
