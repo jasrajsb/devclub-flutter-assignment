@@ -30,21 +30,27 @@ getItems() async {
   dataArr = data;
   var arr=[];
   points=[];
-
-
   for(var drawing in data){
-    print('ye');
-    print(drawing );
-
     if(!(drawing == null)){
-
       arr.add(drawing["name"]);
       points.add(resolveOffset(drawing["points"]));
     }
-
-
   }
 
+  list=arr;
+  return arr;
+}
+getItems2(data2) async {
+  var data = jsonDecode(data2);
+  dataArr = data;
+  var arr=[];
+  points=[];
+  for(var drawing in data){
+    if(!(drawing == null)){
+      arr.add(drawing["name"]);
+      points.add(resolveOffset(drawing["points"]));
+    }
+  }
 
   list=arr;
   return arr;
@@ -84,13 +90,14 @@ class listOfDrawings extends StatefulWidget {
     return listOfDrawingsState(list);
   }
 }
-
+var _reloader;
 // ignore: camel_case_types
 class listOfDrawingsState extends State {
   var list = [];
   listOfDrawingsState(listVar){
     list = listVar;
   }
+
   _getList() async {
     var _items = await getItems();
     setState((){
@@ -98,7 +105,9 @@ class listOfDrawingsState extends State {
       list = _items;
     });
   }
+
   initState() {
+
     setState(()  {
       _getList();
     });
@@ -106,11 +115,14 @@ class listOfDrawingsState extends State {
   }
   @override
   Widget build(BuildContext context) {
+     _reloader = (){
+      _getList();
+    };
     print('78');
     print(list);
     return Scaffold(
       body: Container(
-        child: MyList(),
+        child: MyList(_reloader),
       ),
       appBar: AppBar(
         title: Text('DevClub IITD Drawing App'),
@@ -130,8 +142,10 @@ class listOfDrawingsState extends State {
 }
 
 class MyList extends StatefulWidget {
-
-
+  var _reloader;
+  MyList(rdr){
+    _reloader = rdr;
+  }
 
 
   @override
@@ -142,6 +156,7 @@ class MyList extends StatefulWidget {
 }
 
 class MyListState extends State<MyList> {
+
   final itemsa = List<String>.generate(20, (i) => "Item ${i + 1}");
   @override
 
@@ -200,9 +215,10 @@ class MyListState extends State<MyList> {
 
 class CanvasPage extends StatefulWidget {
   @override
-  var p;
-  CanvasPage(i){
+  var p,   _reloader;
+  CanvasPage(i, ){
     p=i;
+
   }
 
 
@@ -344,7 +360,8 @@ class CanvasState extends State {
 
                     print(jsonDecode(str));
                     prefs.setString("data", jsonEncode(arr));
-                    
+                    getItems2( jsonEncode(arr));
+                    _reloader();
                     Navigator.pop(context);
                   },
                 ),
